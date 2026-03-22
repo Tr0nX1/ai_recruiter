@@ -1,0 +1,17 @@
+.env
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+outputs/*.xlsx
+outputs/*.json
+outputs/uploads/
+outputs/gdrive_inbox/
+outputs/gdrive_tmp/
+outputs/gdrive_token.json
+outputs/duplicate_registry.json
+outputs/evaluation_memory.db
+outputs/crew_log.txt
+outputs/app.log
+.pytest_cache/
+.mypy_cache/

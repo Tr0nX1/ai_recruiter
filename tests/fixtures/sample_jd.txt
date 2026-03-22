@@ -1,0 +1,13 @@
+Senior Software Engineer — Platform Team
+
+We need an experienced backend engineer to design and operate distributed services on AWS.
+
+Requirements:
+- 5+ years with Python or Go in production
+- Strong experience with Kubernetes, microservices, and API design
+- PostgreSQL or similar relational databases
+- Excellent communication and ownership
+
+Nice to have: gRPC, event-driven architecture, payments or high-traffic systems.
+
+Location: Remote (US). Full-time.

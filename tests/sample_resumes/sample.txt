@@ -1,0 +1,23 @@
+Jane Doe
+jane.doe@email.com | +1-555-0100 | San Francisco, CA
+linkedin.com/in/janedoe
+
+SUMMARY
+Senior software engineer with 8 years building distributed systems and cloud APIs.
+
+SKILLS
+Python, Go, AWS, Kubernetes, PostgreSQL, gRPC, system design
+
+EXPERIENCE
+Acme Corp — Senior Software Engineer | 2020 – Present
+- Led migration of monolith to microservices; reduced p99 latency by 35%.
+- Owned payments API serving 2M+ requests/day.
+
+Beta Labs — Software Engineer | 2016 – 2020
+- Built data pipelines with Python and Spark.
+
+EDUCATION
+BS Computer Science — State University — 2016
+
+CERTIFICATIONS
+AWS Solutions Architect Associate
