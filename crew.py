@@ -41,7 +41,7 @@ _last_kickoff_inputs: dict[str, Any] = {}
 
 
 def _is_transient_api_error(exc: BaseException) -> bool:
-    """Retry rate limits, timeouts, and connection errors (OpenAI-compatible)."""
+    """Retry rate limits, timeouts, and connection errors (OpenAI + Anthropic)."""
     msg = str(exc).lower()
     if "insufficient_quota" in msg:
         return False
@@ -49,6 +49,14 @@ def _is_transient_api_error(exc: BaseException) -> bool:
         from openai import APIConnectionError, APITimeoutError, RateLimitError
 
         if isinstance(exc, (RateLimitError, APIConnectionError, APITimeoutError)):
+            return True
+    except ImportError:
+        pass
+    try:
+        from anthropic import APIConnectionError as AnthrAPIConnErr
+        from anthropic import RateLimitError as AnthrRateLimitErr
+
+        if isinstance(exc, (AnthrRateLimitErr, AnthrAPIConnErr)):
             return True
     except ImportError:
         pass
@@ -160,8 +168,8 @@ def build_crew() -> Crew:
     embedder_cfg = None
     if USE_CREW_MEMORY:
         embedder_cfg = {
-            "provider": "openai",
-            "config": {"model": "text-embedding-3-small"},
+            "provider": "huggingface",
+            "config": {"model": "all-MiniLM-L6-v2"},
         }
 
     return Crew(

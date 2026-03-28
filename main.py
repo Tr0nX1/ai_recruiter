@@ -23,7 +23,7 @@ _configure_stdio_utf8()
 
 from loguru import logger
 
-from config import MAX_RESUMES_PER_RUN, MAX_FILE_SIZE_MB, PLACEHOLDER_OPENAI_KEY
+from config import MAX_RESUMES_PER_RUN, MAX_FILE_SIZE_MB
 from crew import run_batch, run_for_resume
 
 
@@ -32,8 +32,8 @@ def _read_jd(path: Path) -> str:
 
 
 def main() -> None:
-    if os.getenv("OPENAI_API_KEY") == PLACEHOLDER_OPENAI_KEY:
-        logger.error("Set OPENAI_API_KEY in .env (see .env.example).")
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        logger.error("Set ANTHROPIC_API_KEY in .env (see .env.example).")
         raise SystemExit(1)
 
     parser = argparse.ArgumentParser(
