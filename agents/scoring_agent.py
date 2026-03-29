@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from crewai import Agent
 
-from config import SMART_LLM
+from config import SMART_MODELS
 from tools.bias_filter_tool import BiasFilterTool
 from tools.embedding_tool import SentenceEmbeddingTool
 from tools.scoring_calculator_tool import ScoringCalculatorTool
@@ -26,7 +26,7 @@ scoring_agent = Agent(
         "You always support your scoring with specific evidence."
     ),
     tools=[SentenceEmbeddingTool(), BiasFilterTool(), ScoringCalculatorTool()],
-    llm=SMART_LLM,
+    llm=SMART_MODELS[0],
     verbose=True,
     allow_delegation=False,
     max_iter=8,

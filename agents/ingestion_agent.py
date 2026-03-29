@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from crewai import Agent
 
-from config import FAST_LLM
+from config import FAST_MODELS
 from tools.apify_tool import ApifyTool
 from tools.docx_reader_tool import DOCXReaderTool
 from tools.gdrive_tool import GDriveTool
@@ -31,7 +31,7 @@ ingestion_agent = Agent(
         GDriveTool(),
         ApifyTool(),
     ],
-    llm=FAST_LLM,
+    llm=FAST_MODELS[0],
     verbose=True,
     allow_delegation=False,
     max_iter=5,

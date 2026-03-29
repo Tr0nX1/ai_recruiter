@@ -9,8 +9,6 @@ from typing import Any
 from crewai import Crew, Process
 from crewai.crews.crew_output import CrewOutput
 from loguru import logger
-from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
-
 from agents import (
     extractor_agent,
     ingestion_agent,
@@ -38,59 +36,71 @@ from tasks.report_task import report_task
 from tasks.scoring_task import scoring_task
 
 _last_kickoff_inputs: dict[str, Any] = {}
+import time
 
+import types
+import concurrent.futures
 
-def _is_transient_api_error(exc: BaseException) -> bool:
-    """Retry rate limits, timeouts, and connection errors (OpenAI + Anthropic)."""
-    msg = str(exc).lower()
-    if "insufficient_quota" in msg:
-        return False
-    try:
-        from openai import APIConnectionError, APITimeoutError, RateLimitError
+_circuit_breaker: dict[str, int] = {}
 
-        if isinstance(exc, (RateLimitError, APIConnectionError, APITimeoutError)):
-            return True
-    except ImportError:
-        pass
-    try:
-        from anthropic import APIConnectionError as AnthrAPIConnErr
-        from anthropic import RateLimitError as AnthrRateLimitErr
+def _patch_agent(agent: Any, models_list: list[str], agent_id: str) -> None:
+    original_execute_task = agent.execute_task
+    
+    def execute_with_fallback(self, *args, **kwargs):
+        for attempt, model in enumerate(models_list):
+            if _circuit_breaker.get(model, 0) >= 3:
+                logger.info("[LLM SKIP] agent={} model={} reason=circuit_breaker_active", getattr(self, "role", agent_id), model)
+                continue
+                
+            self.llm = model
+            logger.info("[LLM TRY] agent={} model={} attempt={}", getattr(self, "role", agent_id), model, attempt + 1)
+            
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(original_execute_task, *args, **kwargs)
+                    out = future.result(timeout=30)
+                    
+                logger.info("[LLM SUCCESS] agent={} model={}", getattr(self, "role", agent_id), model)
+                _circuit_breaker[model] = 0
+                return out
+                
+            except concurrent.futures.TimeoutError:
+                logger.error("[LLM FAIL] agent={} model={} reason=timeout", getattr(self, "role", agent_id), model)
+                _circuit_breaker[model] = _circuit_breaker.get(model, 0) + 1
+                
+            except Exception as e:
+                reason = str(e).split('\n')[0][:100]
+                logger.error("[LLM FAIL] agent={} model={} reason={}", getattr(self, "role", agent_id), model, reason)
+                _circuit_breaker[model] = _circuit_breaker.get(model, 0) + 1
+                
+            if attempt < len(models_list) - 1:
+                next_model = models_list[attempt + 1]
+                logger.info("[LLM FALLBACK] switching → {}", next_model)
+                time.sleep(1)
+                
+        logger.error("All LLM providers failed for {}", getattr(self, "role", agent_id))
+        return {
+            "status": "error",
+            "reason": "All LLM providers failed",
+            "agent": getattr(self, "role", agent_id)
+        }
+        
+    agent.execute_task = types.MethodType(execute_with_fallback, agent)
 
-        if isinstance(exc, (AnthrRateLimitErr, AnthrAPIConnErr)):
-            return True
-    except ImportError:
-        pass
-    if "429" in msg or "rate limit" in msg:
-        return True
-    if "timeout" in msg or "timed out" in msg:
-        return True
-    if "connection" in msg or "connect" in msg:
-        return True
-    if "503" in msg or "unavailable" in msg or "502" in msg or "504" in msg:
-        return True
-    return False
-
+def isolate_agent_fallbacks(crew: Crew) -> None:
+    from config import FAST_MODELS, SMART_MODELS
+    for agent in crew.agents:
+        role = (agent.role or "").lower()
+        fast_keywords = ["document processing", "data analyst", "talent acquisition"]
+        if any(k in role for k in fast_keywords):
+            _patch_agent(agent, FAST_MODELS, "fast")
+        else:
+            _patch_agent(agent, SMART_MODELS, "smart")
 
 def _kickoff_with_retry(crew: Crew, inputs: dict[str, Any]) -> CrewOutput:
-    """Run crew.kickoff with optional tenacity retries for transient API failures."""
-
-    if API_RETRY_MAX_ATTEMPTS <= 1:
-        return crew.kickoff(inputs=inputs)
-
-    @retry(
-        stop=stop_after_attempt(API_RETRY_MAX_ATTEMPTS),
-        wait=wait_exponential(
-            multiplier=1,
-            min=API_RETRY_MIN_WAIT_SEC,
-            max=API_RETRY_MAX_WAIT_SEC,
-        ),
-        retry=retry_if_exception(_is_transient_api_error),
-        reraise=True,
-    )
-    def _do() -> CrewOutput:
-        return crew.kickoff(inputs=inputs)
-
-    return _do()
+    """Run crew.kickoff with fallback logic handled at the agent execution level."""
+    isolate_agent_fallbacks(crew)
+    return crew.kickoff(inputs=inputs)
 
 
 def _persist_from_crew_output(result: CrewOutput) -> CrewOutput:

@@ -11,20 +11,30 @@ load_dotenv()
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
-# CrewAI instantiates the LLM at Agent() import time; allow imports without a real key.
-PLACEHOLDER_OPENAI_KEY = "placeholder-set-OPENAI_API_KEY-in-env"
+# Allow LiteLLM to import safely without throwing openai missing key errors
+PLACEHOLDER_KEY = "placeholder-set-key-in-env"
 if not os.getenv("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = PLACEHOLDER_OPENAI_KEY
+    os.environ["OPENAI_API_KEY"] = PLACEHOLDER_KEY
 
-# Primary LLM is Anthropic — warn if key is missing
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-if not ANTHROPIC_API_KEY:
+# Primary LLM routing is powered by OpenRouter
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+if not OPENROUTER_API_KEY:
     import warnings
-    warnings.warn("ANTHROPIC_API_KEY not set — Anthropic LLM calls will fail.")
+    warnings.warn("OPENROUTER_API_KEY not set — LLM calls will fail.")
 
-# LLM settings (Anthropic Claude models via LiteLLM)
-FAST_LLM = os.getenv("FAST_LLM", "anthropic/claude-3-5-haiku-20241022")
-SMART_LLM = os.getenv("SMART_LLM", "anthropic/claude-sonnet-4-20250514")
+# Multi-Level LLM Array defaults (Standardized to OpenRouter)
+# Allows Graceful Failover through multiple LLM providers seamlessly.
+FAST_MODELS = [
+    os.getenv("FAST_MODELS_0", "openrouter/meta-llama/llama-3.1-8b-instruct"),
+    os.getenv("FAST_MODELS_1", "openrouter/deepseek/deepseek-chat"),
+    os.getenv("FAST_MODELS_2", "openrouter/mistral/mistral-7b-instruct"),
+]
+
+SMART_MODELS = [
+    os.getenv("SMART_MODELS_0", "openrouter/openai/gpt-4o-mini"),
+    os.getenv("SMART_MODELS_1", "openrouter/anthropic/claude-3-haiku"),
+    os.getenv("SMART_MODELS_2", "openrouter/google/gemini-flash-1.5"),
+]
 TEMPERATURE_SCORING = float(os.getenv("TEMPERATURE_SCORING", "0.2"))
 TEMPERATURE_WRITING = float(os.getenv("TEMPERATURE_WRITING", "0.7"))
 
@@ -55,7 +65,7 @@ UPLOAD_DIR = OUTPUT_DIR / "uploads"
 USE_CREW_MEMORY = os.getenv("USE_CREW_MEMORY", "false").lower() in ("1", "true", "yes")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN")
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL_ID = os.getenv("SLACK_CHANNEL_ID")
@@ -63,10 +73,8 @@ SLACK_CHANNEL_ID = os.getenv("SLACK_CHANNEL_ID")
 for d in (OUTPUT_DIR, UPLOAD_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
-# Phase 3 — batch / API resilience (see plan/Ai_recruiter_plan.md §14)
-API_RETRY_MAX_ATTEMPTS = max(1, int(os.getenv("API_RETRY_MAX_ATTEMPTS", "3")))
-API_RETRY_MIN_WAIT_SEC = float(os.getenv("API_RETRY_MIN_WAIT_SEC", "4"))
-API_RETRY_MAX_WAIT_SEC = float(os.getenv("API_RETRY_MAX_WAIT_SEC", "60"))
+# Phase 3 — API resilience fallback configuration
+# Removing manual retry constraints; max attempts bounded safely by len(FAST_MODELS/SMART_MODELS) natively.
 
 # Log file (loguru, Phase 3)
 _ai_recruiter_log_configured = False

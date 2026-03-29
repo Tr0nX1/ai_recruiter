@@ -23,7 +23,7 @@ from crew import run_batch  # noqa: E402
 
 st.set_page_config(page_title="AI Recruiter", page_icon="🤖", layout="wide")
 st.title("AI Resume Screener")
-st.caption("Powered by CrewAI · Claude (Anthropic) · Sentence Transformers · batch + retries")
+st.caption("Powered by CrewAI · OpenRouter · Sentence Transformers · batch + retries")
 
 with st.sidebar:
     st.header("Job Details")
@@ -41,8 +41,8 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True,
 )
 
-if not os.getenv("ANTHROPIC_API_KEY"):
-    st.warning("Set ANTHROPIC_API_KEY in `.env` before running screening.")
+if not os.getenv("OPENROUTER_API_KEY"):
+    st.warning("Set OPENROUTER_API_KEY in `.env` before running screening.")
 
 if st.button("Run AI Screening", type="primary", disabled=not (uploaded_files and jd_text and role_title)):
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)

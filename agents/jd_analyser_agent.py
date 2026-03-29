@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from crewai import Agent
 
-from config import FAST_LLM
+from config import FAST_MODELS
 from tools.jd_tools import IndustryContextTool, JDParserTool
 
 jd_analyser_agent = Agent(
@@ -22,7 +22,7 @@ jd_analyser_agent = Agent(
         "a Senior role weights track record more."
     ),
     tools=[JDParserTool(), IndustryContextTool()],
-    llm=FAST_LLM,
+    llm=FAST_MODELS[0],
     verbose=True,
     allow_delegation=False,
     max_iter=4,

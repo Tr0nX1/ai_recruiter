@@ -32,8 +32,8 @@ def _read_jd(path: Path) -> str:
 
 
 def main() -> None:
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        logger.error("Set ANTHROPIC_API_KEY in .env (see .env.example).")
+    if not os.getenv("OPENROUTER_API_KEY"):
+        logger.error("Set OPENROUTER_API_KEY in .env (see .env.example).")
         raise SystemExit(1)
 
     parser = argparse.ArgumentParser(

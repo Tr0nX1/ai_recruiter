@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from crewai import Agent
 
-from config import SMART_LLM
+from config import SMART_MODELS
 from tools.email_tool import EmailTool
 from tools.excel_writer_tool import ExcelWriterTool
 from tools.interview_q_tool import InterviewPackTool, InterviewQGenTool
@@ -30,7 +30,7 @@ report_writer_agent = Agent(
         SlackNotifyTool(),
         EmailTool(),
     ],
-    llm=SMART_LLM,
+    llm=SMART_MODELS[0],
     verbose=True,
     allow_delegation=False,
     max_iter=5,
